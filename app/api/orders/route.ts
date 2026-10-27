@@ -1,25 +1,12 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-
-const orderSchema = z.object({
-  customerName: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().max(254),
-  phone: z.string().trim().min(10).max(20),
-  address: z.string().trim().min(5).max(500),
-  deliveryPinCode: z.string().regex(/^[0-9]{6}$/),
-  deliverySlot: z.string().optional(),
-  notes: z.string().max(500).optional(),
-  items: z.array(z.object({ productId: z.string().min(1), quantity: z.number().int().min(1).max(50) })).min(1).max(50)
-});
+import { orderSchema, validateBody } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
-  let parsed;
-  try { parsed = orderSchema.safeParse(await request.json()); }
-  catch { return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }); }
-  if (!parsed.success) return NextResponse.json({ error: "Please check your details and basket." }, { status: 400 });
+  const parsed = validateBody(orderSchema, await request.json().catch(() => null));
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   try {
     const result = await db.$transaction(async tx => {

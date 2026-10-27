@@ -29,5 +29,8 @@
 /* Empty state */
 .empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 
+/* Legal pages */
+.muted{color:var(--muted);font-size:13px}
+
 /* Responsive */
 @media (min-width: 768px) { .sidebar { transform:translateX(0); position:relative; } .dashboard-main { margin-left:260px; } .menu-btn { display:none; } }
