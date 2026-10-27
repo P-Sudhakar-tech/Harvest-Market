@@ -15,14 +15,14 @@ export async function comparePassword(plain: string, hashValue: string) {
   return compare(plain, hashValue);
 }
 
-export function generateToken() {
+export async function generateToken() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
 }
 
 export async function createSession(userId: string) {
-  const token = generateToken();
+  const token = await generateToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await db.session.create({ data: { token, userId, expiresAt } });
   (await cookies()).set(SESSION_COOKIE, token, {
