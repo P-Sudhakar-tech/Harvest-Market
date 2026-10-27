@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ShieldCheck, Users, LogOut, Package, ShoppingBasket, Menu, X, RefreshCw } from "lucide-react";
-import DashboardLayout from "@/app/dashboard/layout";
 
 type Farmer = { id: string; name: string; farmName: string; location: string; verified: boolean; user: { email: string } | null; _count: { products: number } };
 type Order = { id: string; customerName: string; email: string; status: string; totalPaise: number; items: any[]; user: { name: string | null } | null };
@@ -90,22 +89,18 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="page" style={{ padding: 40, textAlign: "center" }}>
-          <div className="page-header"><h1>Loading dashboard...</h1></div>
-        </div>
-      </DashboardLayout>
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <h1>Loading dashboard...</h1>
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <DashboardLayout>
-        <div className="page" style={{ padding: 40, textAlign: "center" }}>
-          <div className="page-header"><h1>Not authenticated</h1></div>
-          <p>Please sign in to access the admin dashboard.</p>
-        </div>
-      </DashboardLayout>
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <h1>Not authenticated</h1>
+        <p>Please sign in to access the admin dashboard.</p>
+      </div>
     );
   }
 
@@ -115,129 +110,127 @@ export default function AdminDashboardPage() {
   const unverifiedFarmers = farmers.filter(f => !f.verified).length;
 
   return (
-    <DashboardLayout>
-      <div className="page">
-        <div className="page-header">
-          <h1>Admin Dashboard</h1>
-          <p>Manage farmers, products, and orders</p>
+    <div className="page">
+      <div className="page-header">
+        <h1>Admin Dashboard</h1>
+        <p>Manage farmers, products, and orders</p>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">Farmers</div>
+          <div className="stat-value">{farmers.length}</div>
         </div>
-
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-label">Farmers</div>
-            <div className="stat-value">{farmers.length}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Products</div>
-            <div className="stat-value">{totalProducts}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Orders</div>
-            <div className="stat-value">{totalOrders}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Revenue</div>
-            <div className="stat-value">₹{(totalRevenue / 100).toFixed(2)}</div>
-          </div>
+        <div className="stat-card">
+          <div className="stat-label">Products</div>
+          <div className="stat-value">{totalProducts}</div>
         </div>
-
-        {error && (
-          <div className="error" style={{ marginBottom: 20 }}>{error}</div>
-        )}
-
-        <div className="section">
-          <div className="section-header">
-            <h2>Farmers</h2>
-            <span className="badge">{unverifiedFarmers} unverified</span>
-          </div>
-          {farmers.length === 0 ? (
-            <div className="empty">No farmers found.</div>
-          ) : (
-            <div className="farmer-table">
-              <table>
-                <thead>
-                  <tr><th>Farm</th><th>Farmer</th><th>Email</th><th>Location</th><th>Products</th><th>Status</th><th>Action</th></tr>
-                </thead>
-                <tbody>
-                  {farmers.map(f => (
-                    <tr key={f.id}>
-                      <td>{f.farmName}</td>
-                      <td>{f.name}</td>
-                      <td>{f.user?.email ?? "—"}</td>
-                      <td>{f.location}</td>
-                      <td>{f._count?.products ?? 0}</td>
-                      <td>
-                        <span className={`status-badge ${f.verified ? "verified" : "pending"}`}>
-                          {f.verified ? "Verified" : "Pending"}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="edit-btn"
-                          onClick={() => handleVerify(f.id, !f.verified)}
-                        >
-                          {f.verified ? "Unverify" : "Verify"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <div className="stat-card">
+          <div className="stat-label">Orders</div>
+          <div className="stat-value">{totalOrders}</div>
         </div>
-
-        <div className="section">
-          <div className="section-header"><h2>All Orders</h2></div>
-          {orders.length === 0 ? (
-            <div className="empty">No orders yet.</div>
-          ) : (
-            <div className="order-list">
-              {orders.map((o: Order) => (
-                <div key={o.id} className="order-card">
-                  <div className="order-header">
-                    <span className="order-id">Order {o.id.slice(-6)}</span>
-                    <span className="order-status">{o.status}</span>
-                  </div>
-                  <div className="order-customer">
-                    <span>{o.customerName}</span>
-                    <span>{o.email}</span>
-                  </div>
-                  <div className="order-items">
-                    {o.items.map((i: any) => (
-                      <div key={i.id} className="order-item">
-                        <span>{i.quantity} × {i.productName}</span>
-                        <span>₹{(i.unitPricePaise ?? 0 / 100).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="order-actions">
-                    {o.status === "CONFIRMED" && (
-                      <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "PREPARING")}>Start Preparing</button>
-                    )}
-                    {o.status === "PREPARING" && (
-                      <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "READY_FOR_PICKUP")}>Mark Ready</button>
-                    )}
-                    {o.status === "READY_FOR_PICKUP" && (
-                      <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "OUT_FOR_DELIVERY")}>Out for Delivery</button>
-                    )}
-                    {o.status === "OUT_FOR_DELIVERY" && (
-                      <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "DELIVERED")}>Mark Delivered</button>
-                    )}
-                    {o.status !== "CANCELLED" && o.status !== "DELIVERED" && (
-                      <button className="edit-btn" onClick={() => handleStatusUpdate(o.id, "CANCELLED")} style={{ color: "#8a1f1f", borderColor: "#8a1f1f" }}>Cancel</button>
-                    )}
-                  </div>
-                  <div className="order-total">
-                    <span>Total:</span>
-                    <strong>₹{(o.totalPaise ?? 0 / 100).toFixed(2)}</strong>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="stat-card">
+          <div className="stat-label">Revenue</div>
+          <div className="stat-value">₹{(totalRevenue / 100).toFixed(2)}</div>
         </div>
       </div>
-    </DashboardLayout>
+
+      {error && (
+        <div className="error" style={{ marginBottom: 20 }}>{error}</div>
+      )}
+
+      <div className="section">
+        <div className="section-header">
+          <h2>Farmers</h2>
+          <span className="badge">{unverifiedFarmers} unverified</span>
+        </div>
+        {farmers.length === 0 ? (
+          <div className="empty">No farmers found.</div>
+        ) : (
+          <div className="farmer-table">
+            <table>
+              <thead>
+                <tr><th>Farm</th><th>Farmer</th><th>Email</th><th>Location</th><th>Products</th><th>Status</th><th>Action</th></tr>
+              </thead>
+              <tbody>
+                {farmers.map(f => (
+                  <tr key={f.id}>
+                    <td>{f.farmName}</td>
+                    <td>{f.name}</td>
+                    <td>{f.user?.email ?? "—"}</td>
+                    <td>{f.location}</td>
+                    <td>{f._count?.products ?? 0}</td>
+                    <td>
+                      <span className={`status-badge ${f.verified ? "verified" : "pending"}`}>
+                        {f.verified ? "Verified" : "Pending"}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleVerify(f.id, !f.verified)}
+                      >
+                        {f.verified ? "Unverify" : "Verify"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="section">
+        <div className="section-header"><h2>All Orders</h2></div>
+        {orders.length === 0 ? (
+          <div className="empty">No orders yet.</div>
+        ) : (
+          <div className="order-list">
+            {orders.map((o: Order) => (
+              <div key={o.id} className="order-card">
+                <div className="order-header">
+                  <span className="order-id">Order {o.id.slice(-6)}</span>
+                  <span className="order-status">{o.status}</span>
+                </div>
+                <div className="order-customer">
+                  <span>{o.customerName}</span>
+                  <span>{o.email}</span>
+                </div>
+                <div className="order-items">
+                  {o.items.map((i: any) => (
+                    <div key={i.id} className="order-item">
+                      <span>{i.quantity} × {i.productName}</span>
+                      <span>₹{(i.unitPricePaise ?? 0 / 100).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="order-actions">
+                  {o.status === "CONFIRMED" && (
+                    <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "PREPARING")}>Start Preparing</button>
+                  )}
+                  {o.status === "PREPARING" && (
+                    <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "READY_FOR_PICKUP")}>Mark Ready</button>
+                  )}
+                  {o.status === "READY_FOR_PICKUP" && (
+                    <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "OUT_FOR_DELIVERY")}>Out for Delivery</button>
+                  )}
+                  {o.status === "OUT_FOR_DELIVERY" && (
+                    <button className="primary-button" onClick={() => handleStatusUpdate(o.id, "DELIVERED")}>Mark Delivered</button>
+                  )}
+                  {o.status !== "CANCELLED" && o.status !== "DELIVERED" && (
+                    <button className="edit-btn" onClick={() => handleStatusUpdate(o.id, "CANCELLED")} style={{ color: "#8a1f1f", borderColor: "#8a1f1f" }}>Cancel</button>
+                  )}
+                </div>
+                <div className="order-total">
+                  <span>Total:</span>
+                  <strong>₹{(o.totalPaise ?? 0 / 100).toFixed(2)}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
