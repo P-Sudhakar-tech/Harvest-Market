@@ -7,22 +7,23 @@ const verifySchema = z.object({
   verified: z.boolean(),
 });
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const user = auth.user!;
+  const { id } = await params;
 
   let body;
   try { body = verifySchema.safeParse(await request.json()); }
   catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
   if (!body.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });
 
-  const farmer = await db.farmer.findUnique({ where: { id: params.id }, include: { user: true } });
+  const farmer = await db.farmer.findUnique({ where: { id }, include: { user: true } });
   if (!farmer) return NextResponse.json({ error: "Farmer not found" }, { status: 404 });
 
   try {
     const updated = await db.farmer.update({
-      where: { id: params.id },
+      where: { id },
       data: { verified: body.data.verified },
     });
     await db.auditLog.create({
@@ -31,7 +32,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         userName: user.name,
         action: body.data.verified ? "farmer.verify" : "farmer.unverify",
         entity: "Farmer",
-        entityId: params.id,
+        entityId: id,
         details: `Farmer ${farmer.name} (${farmer.farmName}) ${body.data.verified ? "verified" : "unverified"}`,
       },
     });

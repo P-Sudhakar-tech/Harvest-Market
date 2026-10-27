@@ -21,12 +21,11 @@ async function logAudit(userId: string | undefined, userName: string | null | un
   });
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string | null } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN", "FARMER"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const user = auth.user!;
-  const id: string = params.id!;
-  if (!id) return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+  const { id } = await params;
 
   const product = await db.product.findUnique({ where: { id } });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -52,12 +51,11 @@ export async function PUT(request: Request, { params }: { params: { id: string |
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string | null } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN", "FARMER"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const user = auth.user!;
-  const id: string = params.id!;
-  if (!id) return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+  const { id } = await params;
 
   const product = await db.product.findUnique({ where: { id } });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });

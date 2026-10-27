@@ -22,12 +22,11 @@ async function logAudit(userId: string | undefined, userName: string | null | un
   await db.auditLog.create({ data: { userId, userName, action, entity, entityId, details } });
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string | null } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN", "FARMER"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const user = auth.user!;
-  const id: string = params.id!;
-  if (!id) return NextResponse.json({ error: "Order ID required" }, { status: 400 });
+  const { id } = await params;
 
   const order = await db.order.findUnique({ where: { id }, include: { items: { include: { product: true } } } });
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });

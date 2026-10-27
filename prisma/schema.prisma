@@ -46,6 +46,7 @@ model Farmer {
   description String
   verified    Boolean   @default(false)
   products    Product[]
+  payouts     Payout[]
   createdAt   DateTime  @default(now())
   user        User?     @relation(fields: [userId], references: [id])
 }
@@ -78,6 +79,7 @@ model Order {
   phone           String
   address         String
   deliveryPinCode String
+  deliverySlot    String?
   notes           String?
   subtotalPaise   Int
   deliveryPaise   Int
@@ -102,6 +104,27 @@ model OrderItem {
   commissionPaise Int   @default(0)
   order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product @relation(fields: [productId], references: [id])
+}
+
+model ServiceablePincode {
+  id            String   @id @default(cuid())
+  pincode       String   @unique
+  deliveryFeePaise Int   @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  @@index([pincode, active])
+}
+
+model Payout {
+  id          String   @id @default(cuid())
+  farmerId    String
+  farmer      Farmer   @relation(fields: [farmerId], references: [id])
+  amountPaise Int
+  status      String   @default("PENDING")
+  paidAt      DateTime?
+  reference   String?
+  createdAt   DateTime @default(now())
+  @@index([farmerId, status])
 }
 
 model AuditLog {

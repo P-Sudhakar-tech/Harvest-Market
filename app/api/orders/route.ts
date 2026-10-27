@@ -9,6 +9,7 @@ const orderSchema = z.object({
   phone: z.string().trim().min(10).max(20),
   address: z.string().trim().min(5).max(500),
   deliveryPinCode: z.string().regex(/^[0-9]{6}$/),
+  deliverySlot: z.string().optional(),
   notes: z.string().max(500).optional(),
   items: z.array(z.object({ productId: z.string().min(1), quantity: z.number().int().min(1).max(50) })).min(1).max(50)
 });
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
 
   try {
     const result = await db.$transaction(async tx => {
+      const pincode = await tx.serviceablePincode.findUnique({ where: { pincode: parsed.data.deliveryPinCode } });
+      if (!pincode || !pincode.active) {
+        throw new Error("Delivery is not available for this PIN code.");
+      }
+
       const ids = [...new Set(parsed.data.items.map(i => i.productId))];
       const products = await tx.product.findMany({ where: { id: { in: ids }, active: true } });
       if (products.length !== ids.length) throw new Error("One or more products are unavailable.");
@@ -31,12 +37,13 @@ export async function POST(request: Request) {
         return { productId: p.id, productName: p.name, quantity: item.quantity, unitPricePaise: p.pricePaise, lineTotal: p.pricePaise * item.quantity };
       });
       const subtotalPaise = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-      const deliveryPaise = 0;
+      const deliveryPaise = pincode.deliveryFeePaise;
       const order = await tx.order.create({ data: {
         userId: user?.id ?? null,
         customerName: parsed.data.customerName, email: parsed.data.email, phone: parsed.data.phone,
-        address: parsed.data.address, deliveryPinCode: parsed.data.deliveryPinCode, notes: parsed.data.notes,
-        subtotalPaise, deliveryPaise, totalPaise: subtotalPaise, status: "PENDING_PAYMENT",
+        address: parsed.data.address, deliveryPinCode: parsed.data.deliveryPinCode,
+        deliverySlot: parsed.data.deliverySlot ?? null, notes: parsed.data.notes,
+        subtotalPaise, deliveryPaise, totalPaise: subtotalPaise + deliveryPaise, status: "PENDING_PAYMENT",
         items: { create: lines.map(({ lineTotal, ...line }) => line) }
       }});
       for (const line of lines) {
