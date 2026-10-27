@@ -25,8 +25,16 @@ export async function POST(request: Request) {
     const valid = await comparePassword(password, user.passwordHash);
     if (!valid) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
 
-    await createSession(user.id);
-    return NextResponse.json({ id: user.id, email: user.email, role: user.role });
+    const { token, expiresAt } = await createSession(user.id);
+    const response = NextResponse.json({ id: user.id, email: user.email, role: user.role });
+    response.cookies.set("hm_session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+    });
+    return response;
   } catch {
     return NextResponse.json({ error: "Could not sign in" }, { status: 500 });
   }

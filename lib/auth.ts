@@ -25,14 +25,7 @@ export async function createSession(userId: string) {
   const token = await generateToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await db.session.create({ data: { token, userId, expiresAt } });
-  (await cookies()).set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: Math.floor(SESSION_TTL_MS / 1000),
-  });
-  return token;
+  return { token, expiresAt };
 }
 
 export async function getSessionUser() {
