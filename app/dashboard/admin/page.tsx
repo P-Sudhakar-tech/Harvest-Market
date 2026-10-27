@@ -1,26 +1,67 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  ShieldCheck,
-  Users,
-  LogOut,
-  Package,
-  ShoppingBasket,
-  Menu,
-  X,
-} from "lucide-react";
 
-const NAV_ITEMS = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Products", href: "/dashboard/products", icon: Package },
-  { name: "Orders", href: "/dashboard/orders", icon: ShoppingBasket },
-];
+const LayoutDashboardIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7"></rect>
+    <rect x="14" y="3" width="7" height="7"></rect>
+    <rect x="14" y="14" width="7" height="7"></rect>
+    <rect x="3" y="14" width="7" height="7"></rect>
+  </svg>
+);
+const PackageIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="16.5" y1="9.4" x2="7.5" y2="4.2"></line>
+    <path></path>
+    <path></path>
+  </svg>
+);
+const ShoppingBasketIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="21" y1="4" x2="14" y2="14"></line>
+    <path></path>
+    <line x1="3" y1="4" x2="21" y2="4"></line>
+    <line x1="10" y1="4" x2="10" y2="21"></line>
+  </svg>
+);
+const UsersIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <path></path>
+  </svg>
+);
+const MenuIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+);
+const XIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+const LogOutIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path></path>
+    <line x1="9" y1="21" x2="15" y2="9"></line>
+    <line x1="9" y1="3" x2="15" y2="9"></line>
+  </svg>
+);
 
 type Farmer = { id: string; name: string; farmName: string; location: string; verified: boolean; user: { email: string } | null; _count: { products: number } };
 type Order = { id: string; customerName: string; email: string; status: string; totalPaise: number; items: any[]; user: { name: string | null } | null };
+
+const NAV_ITEMS = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
+  { name: "Products", href: "/dashboard/products", icon: PackageIcon },
+  { name: "Orders", href: "/dashboard/orders", icon: ShoppingBasketIcon },
+];
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -141,7 +182,8 @@ export default function AdminDashboardPage() {
         className="sidebar"
         style={{
           position: "fixed",
-          top: 0, bottom: 0,
+          top: 0,
+          bottom: 0,
           left: 0,
           width: "260px",
           height: "100%",
@@ -157,7 +199,7 @@ export default function AdminDashboardPage() {
         <div className="sidebar-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #e5e6dc" }}>
           <div className="brand" style={{ fontWeight: "700", color: "#294b35", fontSize: "16px" }}>Admin Hub</div>
           <button className="close-btn" onClick={() => setSidebarOpen(false)} style={{ background: "none", border: "none", color: "#7c8275", cursor: "pointer", padding: 4 }}>
-            <X size={20} />
+            <XIcon />
           </button>
         </div>
         <nav style={{ padding: "16px 0", flex: 1, overflowY: "auto" }}>
@@ -178,7 +220,7 @@ export default function AdminDashboardPage() {
                 background: activeNav?.name === item.name ? "#294b35" : "transparent",
               }}
             >
-              {item.icon && item.icon && React.createElement(item.icon, { size: 18 })}
+              <item.icon />
               {item.name}
             </a>
           ))}
@@ -198,7 +240,7 @@ export default function AdminDashboardPage() {
                 background: "#294b35",
               }}
             >
-              <Users size={18} />
+              <UsersIcon />
               Admin
             </a>
           )}
@@ -231,7 +273,7 @@ export default function AdminDashboardPage() {
               cursor: "pointer",
             }}
           >
-            <LogOut size={18} /> Sign out
+            <LogOutIcon /> Sign out
           </button>
         </div>
       </aside>
@@ -240,14 +282,13 @@ export default function AdminDashboardPage() {
       <div className="dashboard-main" style={{ marginLeft: "260px", flex: 1, overflowY: "auto" }}>
         <header className="dashboard-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #e5e6dc", background: "#fff" }}>
           <button className="menu-btn" onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", color: "#7c8275", cursor: "pointer" }}>
-            <Menu size={22} />
+            <MenuIcon />
           </button>
           <div className="title" style={{ fontWeight: "700", fontSize: "16px", color: "#29352a" }}>
             {activeNav?.name || "Dashboard"}
           </div>
         </header>
         <main className="dashboard-content" style={{ padding: 24 }}>
-          {/* Page Content */}
           <div className="page">
             <div className="page-header" style={{ marginBottom: 24 }}>
               <h1 style={{ fontSize: "20px", fontWeight: "700", color: "#203c2b", marginTop: 0 }}>
@@ -309,7 +350,9 @@ export default function AdminDashboardPage() {
 
             <div className="section" style={{ background: "#fff", border: "1px solid #e5e6dc", borderRadius: 8, padding: 20, marginBottom: 20 }}>
               <div className="section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#203c2b", margin: 0 }}>Farmers</h2>
+                <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#203c2b", margin: 0 }}>
+                  Farmers
+                </h2>
                 <span className="badge" style={{ fontSize: "11px", fontWeight: "700", color: "#8a1f1f", background: "#fdecea", padding: "2px 8px", borderRadius: 10 }}>
                   {unverifiedFarmers} unverified
                 </span>
@@ -323,13 +366,27 @@ export default function AdminDashboardPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Farm</th>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Farmer</th>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Email</th>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Location</th>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Products</th>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Status</th>
-                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #e5e6dc" }}>Action</th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Farm
+                        </th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Farmer
+                        </th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Email
+                        </th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Location
+                        </th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Products
+                        </th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Status
+                        </th>
+                        <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: "700", color: "#7c8275", textTransform: "uppercase", borderBottom: "1px solid #e5e6dc" }}>
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -375,7 +432,9 @@ export default function AdminDashboardPage() {
 
             <div className="section" style={{ background: "#fff", border: "1px solid #e5e6dc", borderRadius: 8, padding: 20, marginBottom: 20 }}>
               <div className="section-header" style={{ marginBottom: 16 }}>
-                <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#203c2b", margin: 0 }}>All Orders</h2>
+                <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#203c2b", margin: 0 }}>
+                  All Orders
+                </h2>
               </div>
               {orders.length === 0 ? (
                 <div className="empty" style={{ textAlign: "center", padding: 32, color: "#7c8275", fontSize: 13 }}>
