@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   description: z.string().max(1000),

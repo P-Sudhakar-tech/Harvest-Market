@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole, getSessionUser } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const statusSchema = z.object({
   status: z.enum(["PENDING_PAYMENT", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"]),
   note: z.string().max(500).optional(),

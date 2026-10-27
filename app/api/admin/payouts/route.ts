@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const payoutSchema = z.object({
   farmerId: z.string().min(1),
   amountPaise: z.number().int().positive(),

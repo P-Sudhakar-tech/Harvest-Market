@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { orderSchema, validateBody } from "@/lib/validation";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   const parsed = validateBody(orderSchema, await request.json().catch(() => null));

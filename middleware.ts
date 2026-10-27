@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const DASHBOARD_ROUTES = ["/dashboard"];
 const ADMIN_ROUTES = ["/dashboard/admin"];
 const FARMER_ROUTES = ["/dashboard/farmer"];

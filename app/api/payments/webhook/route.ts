@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { db } from "@/lib/db";
 
+export const runtime = "nodejs";
+
 export const config = {
   api: {
     bodyParser: false,

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole, getSessionUser } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const updateSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
   description: z.string().max(1000).optional(),

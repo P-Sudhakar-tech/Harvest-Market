@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { signupSchema, validateBody } from "@/lib/validation";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const parsed = validateBody(signupSchema, await request.json().catch(() => null));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });

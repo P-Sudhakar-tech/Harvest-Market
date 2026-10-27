@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const pincodeSchema = z.object({
   pincode: z.string().regex(/^[0-9]{6}$/).optional(),
   deliveryFeePaise: z.number().int().min(0).optional(),

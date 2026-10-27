@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 const verifySchema = z.object({
   verified: z.boolean(),
 });
