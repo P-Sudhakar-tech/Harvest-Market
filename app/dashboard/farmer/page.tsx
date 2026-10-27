@@ -20,13 +20,22 @@ export default function FarmerDashboardPage() {
     (async () => {
       try {
         const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setError("Session expired. Please sign in again.");
+          setLoading(false);
+          return;
+        }
         const u = await res.json();
-        if (u.role !== "FARMER" && u.role !== "ADMIN") return;
+        if (u.role !== "FARMER" && u.role !== "ADMIN") {
+          setError("Farmer or admin access required.");
+          setLoading(false);
+          return;
+        }
         setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
         await fetchData();
-      } catch {
-        return;
+      } catch (err) {
+        setError("Failed to load session. Please try again.");
+        setLoading(false);
       }
     })();
   }, []);
@@ -37,18 +46,19 @@ export default function FarmerDashboardPage() {
         fetch("/api/admin/products", { credentials: "include" }),
         fetch("/api/admin/orders", { credentials: "include" }),
       ]);
+      if (!pRes.ok || !oRes.ok) {
+        throw new Error("Failed to load dashboard data.");
+      }
       const productsData = await pRes.json();
       const ordersData = await oRes.json();
       setProducts(productsData);
       setOrders(ordersData);
-    } catch (err) {
-      setError("Failed to load data.");
+    } catch (err: any) {
+      setError(err?.message || "Failed to load data.");
     } finally {
       setLoading(false);
     }
   };
-
-  const farmerId = user?.id; // placeholder; we filter by products owned
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,15 +70,16 @@ export default function FarmerDashboardPage() {
           ...form,
           pricePaise: parseInt(form.pricePaise) || 0,
           stock: parseInt(form.stock) || 0,
-          farmerId: "temp", // will be overridden by server based on user role
+          farmerId: "temp",
         }),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create product");
       setAdding(false);
       setForm({ name: "", description: "", category: "", pricePaise: "", unit: "kg", image: "", stock: "" });
       await fetchData();
-    } catch (err) {
-      setError("Failed to create product.");
+    } catch (err: any) {
+      setError(err?.message || "Failed to create product.");
     }
   };
 
@@ -115,8 +126,26 @@ export default function FarmerDashboardPage() {
     }
   };
 
-  if (loading) return <div className="page"><div className="page-header"><h1>Loading...</h1></div></div>;
-  if (!user) return <div className="page"><div className="page-header"><h1>Not authenticated</h1></div></div>;
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="page" style={{ padding: 40, textAlign: "center" }}>
+          <div className="page-header"><h1>Loading dashboard...</h1></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="page" style={{ padding: 40, textAlign: "center" }}>
+          <div className="page-header"><h1>Not authenticated</h1></div>
+          <p>Please sign in to access the farmer dashboard.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const lowStock = products.filter(p => p.stock <= 5 && p.stock > 0).length;
   const outOfStock = products.filter(p => p.stock === 0).length;
@@ -148,7 +177,9 @@ export default function FarmerDashboardPage() {
           </div>
         </div>
 
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error" style={{ marginBottom: 20 }}>{error}</div>
+        )}
 
         <div className="section">
           <div className="section-header">

@@ -18,13 +18,22 @@ export default function AdminDashboardPage() {
     (async () => {
       try {
         const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setError("Session expired. Please sign in again.");
+          setLoading(false);
+          return;
+        }
         const u = await res.json();
-        if (u.role !== "ADMIN") return;
+        if (u.role !== "ADMIN") {
+          setError("Admin access required.");
+          setLoading(false);
+          return;
+        }
         setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
         await fetchData();
-      } catch {
-        return;
+      } catch (err) {
+        setError("Failed to load session. Please try again.");
+        setLoading(false);
       }
     })();
   }, []);
@@ -35,12 +44,15 @@ export default function AdminDashboardPage() {
         fetch("/api/admin/farmers", { credentials: "include" }),
         fetch("/api/admin/orders", { credentials: "include" }),
       ]);
+      if (!fRes.ok || !oRes.ok) {
+        throw new Error("Failed to load dashboard data.");
+      }
       const farmersData = await fRes.json();
       const ordersData = await oRes.json();
       setFarmers(farmersData);
       setOrders(ordersData);
-    } catch (err) {
-      setError("Failed to load data.");
+    } catch (err: any) {
+      setError(err?.message || "Failed to load data.");
     } finally {
       setLoading(false);
     }
@@ -76,12 +88,30 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (loading) return <div className="page"><div className="page-header"><h1>Loading...</h1></div></div>;
-  if (!user) return <div className="page"><div className="page-header"><h1>Not authenticated</h1></div></div>;
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="page" style={{ padding: 40, textAlign: "center" }}>
+          <div className="page-header"><h1>Loading dashboard...</h1></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  const totalProducts = farmers.reduce((sum, f) => sum + f._count.products, 0);
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="page" style={{ padding: 40, textAlign: "center" }}>
+          <div className="page-header"><h1>Not authenticated</h1></div>
+          <p>Please sign in to access the admin dashboard.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const totalProducts = farmers.reduce((sum, f) => sum + (f._count?.products ?? 0), 0);
   const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalPaise, 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.totalPaise ?? 0), 0);
   const unverifiedFarmers = farmers.filter(f => !f.verified).length;
 
   return (
@@ -111,7 +141,9 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error" style={{ marginBottom: 20 }}>{error}</div>
+        )}
 
         <div className="section">
           <div className="section-header">
@@ -133,7 +165,7 @@ export default function AdminDashboardPage() {
                       <td>{f.name}</td>
                       <td>{f.user?.email ?? "—"}</td>
                       <td>{f.location}</td>
-                      <td>{f._count.products}</td>
+                      <td>{f._count?.products ?? 0}</td>
                       <td>
                         <span className={`status-badge ${f.verified ? "verified" : "pending"}`}>
                           {f.verified ? "Verified" : "Pending"}
@@ -175,7 +207,7 @@ export default function AdminDashboardPage() {
                     {o.items.map((i: any) => (
                       <div key={i.id} className="order-item">
                         <span>{i.quantity} × {i.productName}</span>
-                        <span>₹{(i.unitPricePaise / 100).toFixed(2)}</span>
+                        <span>₹{(i.unitPricePaise ?? 0 / 100).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -198,7 +230,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="order-total">
                     <span>Total:</span>
-                    <strong>₹{(o.totalPaise / 100).toFixed(2)}</strong>
+                    <strong>₹{(o.totalPaise ?? 0 / 100).toFixed(2)}</strong>
                   </div>
                 </div>
               ))}
