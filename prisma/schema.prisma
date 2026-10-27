@@ -23,6 +23,7 @@ model User {
   session       Session[]
   farmerProfile Farmer?
   orders        Order[]
+  auditLogs     AuditLog[]
 }
 
 model Session {
@@ -98,6 +99,21 @@ model OrderItem {
   productName    String
   quantity       Int
   unitPricePaise Int
+  commissionPaise Int   @default(0)
   order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product @relation(fields: [productId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([createdAt])
+  @@index([entity, entityId])
 }

@@ -56,7 +56,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   const orders = await db.order.findMany({
     where: { userId: user.id },
-    include: { items: true },
+    include: { items: { include: { product: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
   });

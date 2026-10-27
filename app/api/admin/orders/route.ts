@@ -11,12 +11,14 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
 
   const where: Record<string, unknown> = {};
-  if (farmerId) where.farmerId = farmerId;
   if (status) where.status = status;
+  if (farmerId) {
+    where.items = { some: { product: { farmerId } } };
+  }
 
   const orders = await db.order.findMany({
     where,
-    include: { items: true, user: true },
+    include: { items: { include: { product: true } }, user: true },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
