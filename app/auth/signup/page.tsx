@@ -8,6 +8,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("CUSTOMER");
   const [error, setError] = useState("");
@@ -21,7 +22,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, phone, password, role }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Sign up failed");
@@ -51,6 +52,10 @@ export default function SignupPage() {
             <div className="field">
               <label>Email address</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Mobile number</label>
+              <input type="tel" required maxLength={10} value={phone} onChange={e => setPhone(e.target.value)} placeholder="9876543210" />
             </div>
             <div className="field">
               <label>Password</label>

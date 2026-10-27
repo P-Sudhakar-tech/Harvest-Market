@@ -14,6 +14,7 @@ export const orderSchema = z.object({
 export const signupSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(254),
+  phone: z.string().regex(/^[0-9]{10}$/, "Enter a valid 10-digit mobile number"),
   password: z.string().min(8).max(128),
   role: z.enum(["CUSTOMER", "FARMER", "ADMIN"]).default("CUSTOMER"),
 });

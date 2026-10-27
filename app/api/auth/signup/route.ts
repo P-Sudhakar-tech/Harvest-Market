@@ -1,31 +1,25 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
-
-const signupSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().max(254),
-  password: z.string().min(8).max(128),
-  role: z.enum(["CUSTOMER", "FARMER", "ADMIN"]).default("CUSTOMER"),
-});
+import { signupSchema, validateBody } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  let body;
-  try { body = signupSchema.safeParse(await request.json()); }
-  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
-  if (!body.success) return NextResponse.json({ error: "Invalid signup data" }, { status: 400 });
+  const parsed = validateBody(signupSchema, await request.json().catch(() => null));
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
-  const { name, email, password, role } = body.data;
+  const { name, email, phone, password, role } = parsed.data;
 
   try {
-    const existing = await db.user.findUnique({ where: { email } });
-    if (existing) return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    const existingEmail = await db.user.findUnique({ where: { email } });
+    if (existingEmail) return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+
+    const existingPhone = await db.user.findUnique({ where: { phone } });
+    if (existingPhone) return NextResponse.json({ error: "Mobile number already registered" }, { status: 409 });
 
     const user = await db.user.create({
-      data: { name, email, passwordHash: await hashPassword(password), role },
+      data: { name, email, phone, passwordHash: await hashPassword(password), role },
     });
-    return NextResponse.json({ id: user.id, email: user.email, role: user.role }, { status: 201 });
+    return NextResponse.json({ id: user.id, email: user.email, phone: user.phone, role: user.role }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Could not create account" }, { status: 500 });
   }
