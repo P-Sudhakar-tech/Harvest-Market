@@ -7,8 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  CUSTOMER
+  FARMER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String
+  role          Role      @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  session       Session[]
+  farmerProfile Farmer?
+  orders        Order[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([token])
+}
+
 model Farmer {
   id          String    @id @default(cuid())
+  userId      String?   @unique
   name        String
   farmName    String
   location    String
@@ -16,6 +46,7 @@ model Farmer {
   verified    Boolean   @default(false)
   products    Product[]
   createdAt   DateTime  @default(now())
+  user        User?     @relation(fields: [userId], references: [id])
 }
 
 model Product {
@@ -40,6 +71,7 @@ model Product {
 
 model Order {
   id              String      @id @default(cuid())
+  userId          String?
   customerName    String
   email           String
   phone           String
@@ -53,8 +85,10 @@ model Order {
   paymentProvider String      @default("manual")
   paymentRef      String?
   items           OrderItem[]
+  user            User?       @relation(fields: [userId], references: [id])
   createdAt       DateTime    @default(now())
   @@index([status, createdAt])
+  @@index([userId])
 }
 
 model OrderItem {
