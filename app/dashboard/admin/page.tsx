@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ShieldCheck, Users, LogOut, Package, ShoppingBasket, Menu, X, RefreshCw } from "lucide-react";
-import { getSessionUser } from "@/lib/auth";
 import DashboardLayout from "@/app/dashboard/layout";
 
 type Farmer = { id: string; name: string; farmName: string; location: string; verified: boolean; user: { email: string } | null; _count: { products: number } };
@@ -17,10 +16,16 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const u = await getSessionUser();
-      if (!u || u.role !== "ADMIN") return;
-      setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
-      await fetchData();
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) return;
+        const u = await res.json();
+        if (u.role !== "ADMIN") return;
+        setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
+        await fetchData();
+      } catch {
+        return;
+      }
     })();
   }, []);
 

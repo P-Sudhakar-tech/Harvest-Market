@@ -2,7 +2,6 @@
 
 import { useEffect, useState, FormEvent } from "react";
 import { Plus, Trash2, Edit3, Save, X, RefreshCw, Menu, LogOut, LayoutDashboard, Package, ShoppingBasket } from "lucide-react";
-import { getSessionUser } from "@/lib/auth";
 import DashboardLayout from "@/app/dashboard/layout";
 
 type Product = { id: string; name: string; description: string; category: string; pricePaise: number; unit: string; image: string; stock: number; featured: boolean; active: boolean };
@@ -19,10 +18,16 @@ export default function FarmerDashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const u = await getSessionUser();
-      if (!u || (u.role !== "FARMER" && u.role !== "ADMIN")) return;
-      setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
-      await fetchData();
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) return;
+        const u = await res.json();
+        if (u.role !== "FARMER" && u.role !== "ADMIN") return;
+        setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
+        await fetchData();
+      } catch {
+        return;
+      }
     })();
   }, []);
 

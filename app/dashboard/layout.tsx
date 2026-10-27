@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { LayoutDashboard, ShieldCheck, Users, LogOut, Package, ShoppingBasket, Menu, X } from "lucide-react";
-import { getSessionUser } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -19,9 +18,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     (async () => {
-      const u = await getSessionUser();
-      if (u) setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
-      else router.push("/auth/signin");
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const u = await res.json();
+          setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
+        } else {
+          router.push("/auth/signin");
+        }
+      } catch {
+        router.push("/auth/signin");
+      }
     })();
   }, [router]);
 

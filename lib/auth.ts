@@ -1,3 +1,5 @@
+'use server';
+
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
