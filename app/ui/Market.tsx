@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ShoppingBasket, Search, Leaf, ArrowRight, Plus, Minus, X, MapPin, Sprout, Truck, ShieldCheck } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { ShoppingBasket, Search, Leaf, ArrowRight, Plus, Minus, X, MapPin, Sprout, Truck, ShieldCheck, User, LogIn, LogOut, UserPlus } from "lucide-react";
 
 type Product = {id:string;name:string;description:string;category:string;pricePaise:number;unit:string;image:string;stock:number;featured:boolean;farmerId:string;farmerName:string;farmerLocation:string};
 type Farmer = {id:string;name:string;farmName:string;location:string;description:string};
@@ -18,12 +18,32 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
   const [checkout,setCheckout] = useState(false);
   const [notice,setNotice] = useState("");
   const [form,setForm] = useState({customerName:"",email:"",phone:"",address:"",deliveryPinCode:"",notes:""});
+  const [user,setUser] = useState<{id:string;name:string|null;email:string;role:string}|null>(null);
+  const [authChecked,setAuthChecked] = useState(false);
   const lines = Object.values(cart);
   const count = lines.reduce((n,l)=>n+l.quantity,0);
   const subtotal = lines.reduce((n,l)=>n+l.product.pricePaise*l.quantity,0);
   const visible = useMemo(()=>products.filter(p=>(category==="All produce"||p.category===category)&&(p.name+" "+p.description+" "+p.farmerName).toLowerCase().includes(search.toLowerCase())),[products,category,search]);
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const res=await fetch("/api/auth/me");
+        if(res.ok){
+          const data=await res.json();
+          setUser({id:data.id,name:data.name,email:data.email,role:data.role});
+        }
+      }catch{}
+      setAuthChecked(true);
+    })();
+  },[]);
+
   function change(p:Product,delta:number) {
     setCart(old=>{const next={...old};const qty=(next[p.id]?.quantity||0)+delta;if(qty<=0)delete next[p.id];else if(qty<=p.stock)next[p.id]={product:p,quantity:qty};return next;});
+  }
+  async function signOut(){
+    await fetch("/api/auth/signout",{method:"POST"});
+    setUser(null);
   }
   async function placeOrder(e:React.FormEvent) {
     e.preventDefault();setNotice("");
@@ -40,6 +60,21 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
     <header className="header wrap">
       <a className="brand" href="#"><span className="brand-icon"><Sprout size={24}/></span><span>harvest<span className="brand-light">market</span><small>GOOD FOOD, GROWN NEARBY</small></span></a>
       <nav><a href="#shop">Shop</a><a href="#farmers">Our farmers</a><a href="#promise">Our promise</a></nav>
+      <div className="auth-controls">
+        {!authChecked ? (
+          <span className="auth-loading">…</span>
+        ) : user ? (
+          <>
+            <span className="auth-user">Hi, {user.name||user.email}</span>
+            <button className="signout-button" onClick={signOut}><LogOut size={16}/> Sign out</button>
+          </>
+        ) : (
+          <>
+            <a href="/auth/signin" className="signin-button"><LogIn size={16}/> Sign in</a>
+            <a href="/auth/signup" className="register-button"><UserPlus size={16}/> Register</a>
+          </>
+        )}
+      </div>
       <button className="cart-button" onClick={()=>setCartOpen(true)}><ShoppingBasket size={18}/> Basket <span>{count}</span></button>
     </header>
 
