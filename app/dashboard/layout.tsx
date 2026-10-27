@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { credentials: "include" });
         if (res.ok) {
           const u = await res.json();
           setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="user-name">{user.name || user.email}</div>
             <div className="user-role">{user.role}</div>
           </div>
-          <button className="signout-btn" onClick={() => { fetch("/api/auth/signout", { method: "POST" }).then(() => router.push("/")); }}>
+          <button className="signout-btn" onClick={() => { fetch("/api/auth/signout", { method: "POST", credentials: "include" }).then(() => router.push("/")); }}>
             <LogOut size={18} /> Sign out
           </button>
         </div>

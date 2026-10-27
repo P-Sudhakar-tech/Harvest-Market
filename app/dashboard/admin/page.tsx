@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { credentials: "include" });
         if (!res.ok) return;
         const u = await res.json();
         if (u.role !== "ADMIN") return;
@@ -32,8 +32,8 @@ export default function AdminDashboardPage() {
   const fetchData = async () => {
     try {
       const [fRes, oRes] = await Promise.all([
-        fetch("/api/admin/farmers"),
-        fetch("/api/admin/orders"),
+        fetch("/api/admin/farmers", { credentials: "include" }),
+        fetch("/api/admin/orders", { credentials: "include" }),
       ]);
       const farmersData = await fRes.json();
       const ordersData = await oRes.json();
@@ -52,6 +52,7 @@ export default function AdminDashboardPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ verified }),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update");
       await fetchData();
@@ -66,6 +67,7 @@ export default function AdminDashboardPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update status");
       await fetchData();

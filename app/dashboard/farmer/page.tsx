@@ -19,7 +19,7 @@ export default function FarmerDashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { credentials: "include" });
         if (!res.ok) return;
         const u = await res.json();
         if (u.role !== "FARMER" && u.role !== "ADMIN") return;
@@ -34,8 +34,8 @@ export default function FarmerDashboardPage() {
   const fetchData = async () => {
     try {
       const [pRes, oRes] = await Promise.all([
-        fetch("/api/admin/products"),
-        fetch("/api/admin/orders"),
+        fetch("/api/admin/products", { credentials: "include" }),
+        fetch("/api/admin/orders", { credentials: "include" }),
       ]);
       const productsData = await pRes.json();
       const ordersData = await oRes.json();
@@ -79,6 +79,7 @@ export default function FarmerDashboardPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update");
       setEditingId(null);
@@ -91,7 +92,7 @@ export default function FarmerDashboardPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this product?")) return;
     try {
-      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error("Failed to delete");
       await fetchData();
     } catch {
@@ -105,6 +106,7 @@ export default function FarmerDashboardPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update status");
       await fetchData();

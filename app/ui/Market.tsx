@@ -28,7 +28,7 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
   useEffect(()=>{
     (async()=>{
       try{
-        const res=await fetch("/api/auth/me");
+        const res=await fetch("/api/auth/me", { credentials: "include" });
         if(res.ok){
           const data=await res.json();
           setUser({id:data.id,name:data.name,email:data.email,role:data.role});
@@ -42,13 +42,13 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
     setCart(old=>{const next={...old};const qty=(next[p.id]?.quantity||0)+delta;if(qty<=0)delete next[p.id];else if(qty<=p.stock)next[p.id]={product:p,quantity:qty};return next;});
   }
   async function signOut(){
-    await fetch("/api/auth/signout",{method:"POST"});
+    await fetch("/api/auth/signout",{method:"POST",credentials:"include"});
     setUser(null);
   }
   async function placeOrder(e:React.FormEvent) {
     e.preventDefault();setNotice("");
     try {
-      const res=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,items:lines.map(l=>({productId:l.product.id,quantity:l.quantity}))})});
+      const res=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,items:lines.map(l=>({productId:l.product.id,quantity:l.quantity}))}),credentials:"include"});
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"Could not place order");
       setNotice(`Order ${data.orderId} created. Payment is not collected yet; the market team will contact you to confirm payment.`);
