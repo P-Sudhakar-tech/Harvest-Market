@@ -2,7 +2,20 @@
 
 import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Plus, Trash2, Edit3, Save, X, RefreshCw, Menu, LogOut, LayoutDashboard, Package, ShoppingBasket, Users } from "lucide.react";
+import {
+  Plus,
+  Trash2,
+  Edit3,
+  Save,
+  X,
+  RefreshCw,
+  Menu,
+  LogOut,
+  LayoutDashboard,
+  Package,
+  ShoppingBasket,
+  Users,
+} from "../../components/Icons";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -186,7 +199,7 @@ export default function ProductsPage() {
         <div className="sidebar-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #e5e6dc" }}>
           <div className="brand" style={{ fontWeight: "700", color: "#294b35", fontSize: "16px" }}>{isAdmin ? "Admin Hub" : "Farmer Hub"}</div>
           <button className="close-btn" onClick={() => setSidebarOpen(false)} style={{ background: "none", border: "none", color: "#7c8275", cursor: "pointer", padding: 4 }}>
-            <X size={20} />
+            <X width={20} height={20} />
           </button>
         </div>
         <nav style={{ padding: "16px 0", flex: 1, overflowY: "auto" }}>
@@ -207,7 +220,7 @@ export default function ProductsPage() {
                 background: activeNav?.name === item.name ? "#294b35" : "transparent",
               }}
             >
-              {item.icon && React.createElement(item.icon, { size: 18 })}
+              {item.icon && React.createElement(item.icon, { width: 18, height: 18 })}
               {item.name}
             </a>
           ))}
@@ -227,7 +240,7 @@ export default function ProductsPage() {
                 background: "#294b35",
               }}
             >
-              <Users size={18} />
+              <Users width={18} height={18} />
               Admin
             </a>
           )}
@@ -260,7 +273,7 @@ export default function ProductsPage() {
               cursor: "pointer",
             }}
           >
-            <LogOut size={18} /> Sign out
+            <LogOut width={18} height={18} /> Sign out
           </button>
         </div>
       </aside>
@@ -269,7 +282,7 @@ export default function ProductsPage() {
       <div className="dashboard-main" style={{ marginLeft: "260px", flex: 1, overflowY: "auto" }}>
         <header className="dashboard-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #e5e6dc", background: "#fff" }}>
           <button className="menu-btn" onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", color: "#7c8275", cursor: "pointer" }}>
-            <Menu size={22} />
+            <Menu width={22} height={22} />
           </button>
           <div className="title" style={{ fontWeight: "700", fontSize: "16px", color: "#29352a" }}>
             Products
@@ -313,7 +326,7 @@ export default function ProductsPage() {
                     gap: 6,
                   }}
                 >
-                  {adding ? "Cancel" : <><Plus size={16} /> Add Product</>}</button>
+                  {adding ? "Cancel" : <><Plus width={16} height={16} /> Add Product</>}</button>
               </div>
 
               {adding && (
