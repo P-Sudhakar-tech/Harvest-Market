@@ -18,15 +18,17 @@ const schema = z.object({
 });
 
 export async function GET(request: Request) {
-  const auth = await requireRole(["ADMIN", "FARMER"]);
+  const auth = await requireRole(["ADMIN", "FARMER", "CUSTOMER"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const user = auth.user!;
 
-  let where = {};
+  let where: Record<string, unknown> = {};
   if (user.role === "FARMER") {
     const farmer = await db.farmer.findFirst({ where: { userId: user.id } });
     if (!farmer) return NextResponse.json([]);
     where = { farmerId: farmer.id };
+  } else if (user.role === "CUSTOMER") {
+    where = { active: true };
   }
 
   const products = await db.product.findMany({
