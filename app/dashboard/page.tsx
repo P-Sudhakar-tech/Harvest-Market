@@ -5,5 +5,6 @@ export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/auth/signin");
   if (user.role === "ADMIN") redirect("/dashboard/admin");
-  redirect("/dashboard/farmer");
+  if (user.role === "FARMER") redirect("/dashboard/farmer");
+  redirect("/dashboard/products");
 }
