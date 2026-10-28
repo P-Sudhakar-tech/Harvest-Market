@@ -17,6 +17,25 @@ const schema = z.object({
   farmerId: z.string().min(1).optional(),
 });
 
+export async function GET(request: Request) {
+  const auth = await requireRole(["ADMIN", "FARMER"]);
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user = auth.user!;
+
+  let where = {};
+  if (user.role === "FARMER") {
+    const farmer = await db.farmer.findFirst({ where: { userId: user.id } });
+    if (!farmer) return NextResponse.json([]);
+    where = { farmerId: farmer.id };
+  }
+
+  const products = await db.product.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+  });
+  return NextResponse.json(products);
+}
+
 export async function POST(request: Request) {
   const auth = await requireRole(["ADMIN", "FARMER"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
