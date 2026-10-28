@@ -23,6 +23,7 @@ export default function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, password, role }),
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Sign up failed");
