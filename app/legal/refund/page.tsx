@@ -22,14 +22,12 @@ export default function RefundPolicyPage() {
       </p>
 
       <h2>3. Eligibility for refund</h2>
-      <p>
-        Refunds may be issued if:
-        <ul>
-          <li>The order is cancelled before fulfilment begins.</li>
-          <li>Products are not delivered or are delivered in unsatisfactory condition.</li>
-          <li>There is a duplicate or erroneous charge.</li>
-        </ul>
-      </p>
+      <p>Refunds may be issued if:</p>
+      <ul>
+        <li>The order is cancelled before fulfilment begins.</li>
+        <li>Products are not delivered or are delivered in unsatisfactory condition.</li>
+        <li>There is a duplicate or erroneous charge.</li>
+      </ul>
 
       <h2>4. Non-refundable</h2>
       <p>
