@@ -18,6 +18,7 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
   const [cartOpen,setCartOpen] = useState(false);
   const [checkout,setCheckout] = useState(false);
   const [notice,setNotice] = useState("");
+  const [paying,setPaying] = useState(false);
   const [form,setForm] = useState({customerName:"",email:"",phone:"",address:"",deliveryPinCode:"",notes:""});
   const [user,setUser] = useState<{id:string;name:string|null;email:string;role:string}|null>(null);
   const [authChecked,setAuthChecked] = useState(false);
@@ -46,15 +47,86 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
     await fetch("/api/auth/signout",{method:"POST",headers:{"x-csrf-token":getCsrfToken()},credentials:"include"});
     setUser(null);
   }
+  function loadRazorpayScript():Promise<boolean>{
+    if((window as any).Razorpay) return Promise.resolve(true);
+    return new Promise(resolve=>{
+      const script=document.createElement("script");
+      script.src="https://checkout.razorpay.com/v1/checkout.js";
+      script.onload=()=>resolve(true);
+      script.onerror=()=>resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  async function pollOrderStatus(orderId:string,attempts=10):Promise<string>{
+    for(let i=0;i<attempts;i++){
+      await new Promise(r=>setTimeout(r,1500));
+      try{
+        const res=await fetch(`/api/orders/${orderId}`,{credentials:"include"});
+        if(res.ok){
+          const data=await res.json();
+          if(data.status && data.status!=="PENDING_PAYMENT") return data.status;
+        }
+      }catch{}
+    }
+    return "PENDING_PAYMENT";
+  }
+
+  function finishCheckout(message:string){
+    setNotice(message);
+    setPaying(false);
+    setCart({});setCheckout(false);setCartOpen(false);
+  }
+
   async function placeOrder(e:React.FormEvent) {
-    e.preventDefault();setNotice("");
+    e.preventDefault();setNotice("");setPaying(true);
     try {
       const res=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json","x-csrf-token":getCsrfToken()},body:JSON.stringify({...form,items:lines.map(l=>({productId:l.product.id,quantity:l.quantity}))}),credentials:"include"});
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"Could not place order");
-      setNotice(`Order ${data.orderId} created. Payment is not collected yet; the market team will contact you to confirm payment.`);
-      setCart({});setCheckout(false);setCartOpen(false);
-    } catch(err) {setNotice(err instanceof Error?err.message:"Something went wrong.");}
+      const orderId=data.orderId;
+
+      const payRes=await fetch(`/api/orders/${orderId}/pay`,{method:"POST",headers:{"x-csrf-token":getCsrfToken()},credentials:"include"});
+      if(!payRes.ok){
+        // Payment provider isn't configured (e.g. local/demo env) — keep the order and let staff follow up.
+        finishCheckout(`Order ${orderId} created. Payment is not collected yet; the market team will contact you to confirm payment.`);
+        return;
+      }
+      const payData=await payRes.json();
+
+      const scriptReady=await loadRazorpayScript();
+      if(!scriptReady){
+        finishCheckout(`Order ${orderId} created, but the payment window couldn't load. Please contact support to complete payment.`);
+        return;
+      }
+
+      const rzp=new (window as any).Razorpay({
+        key:payData.key,
+        amount:payData.amount,
+        currency:payData.currency,
+        order_id:payData.orderId,
+        name:"Harvest Market",
+        description:`Order ${orderId}`,
+        prefill:{name:form.customerName,email:form.email,contact:form.phone},
+        theme:{color:"#294b35"},
+        handler:async function(){
+          setNotice("Payment received — confirming your order…");
+          const finalStatus=await pollOrderStatus(orderId);
+          finishCheckout(finalStatus==="CONFIRMED"
+            ? `Payment received — order ${orderId} is confirmed!`
+            : `Payment received for order ${orderId}. We're confirming it now — check back shortly.`);
+        },
+        modal:{
+          ondismiss:function(){
+            finishCheckout(`Order ${orderId} was created but payment wasn't completed. Contact support with this order ID to complete payment.`);
+          },
+        },
+      });
+      rzp.open();
+    } catch(err) {
+      setNotice(err instanceof Error?err.message:"Something went wrong.");
+      setPaying(false);
+    }
   }
   return <main>
     <div className="announcement"><Leaf size={14}/> Fresh from nearby farms · Supporting growers, one basket at a time</div>
@@ -98,7 +170,7 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
     <footer><div className="wrap footer-inner"><a className="brand footer-brand" href="#"><span className="brand-icon"><Sprout size={22}/></span><span>harvest<span className="brand-light">market</span><small>GOOD FOOD, GROWN NEARBY</small></span></a><span>Rooted in community. Growing together.</span><span>© {new Date().getFullYear()} Harvest Market</span></div></footer>
 
     {cartOpen&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget){setCartOpen(false);setCheckout(false)}}}><aside className="cart-drawer"><div className="drawer-heading"><div><div className="eyebrow">YOUR HARVEST</div><h2>{checkout?"Delivery details":"Your basket"}</h2></div><button className="icon-button" onClick={()=>{setCartOpen(false);setCheckout(false)}}><X/></button></div>
-      {!checkout?<>{lines.length===0?<div className="empty">Your basket is waiting for something fresh.<a href="#shop" onClick={()=>setCartOpen(false)}>Explore the harvest →</a></div>:<><div className="cart-lines">{lines.map(l=><div className="cart-line" key={l.product.id}><img src={l.product.image} alt=""/><div className="cart-line-main"><b>{l.product.name}</b><small>{money(l.product.pricePaise)} / {l.product.unit}</small><div className="quantity"><button onClick={()=>change(l.product,-1)}><Minus size={13}/></button><span>{l.quantity}</span><button onClick={()=>change(l.product,1)} disabled={l.quantity>=l.product.stock}><Plus size={13}/></button></div></div><strong>{money(l.product.pricePaise*l.quantity)}</strong></div>)}</div><div className="cart-total"><div><span>Subtotal</span><b>{money(subtotal)}</b></div><div><span>Delivery</span><span>Calculated at confirmation</span></div><div className="total-row"><b>Estimated total</b><b>{money(subtotal)}</b></div><button className="primary-button full-button" onClick={()=>setCheckout(true)}>Continue to delivery <ArrowRight size={17}/></button><p className="secure-note"><ShieldCheck size={14}/> No payment is taken in this demo checkout.</p></div></>}</>:<form className="checkout-form" onSubmit={placeOrder}><p className="form-intro">Tell us where to bring your fresh harvest. Fields marked * are required.</p>{([["customerName","Full name *"],["email","Email address *"],["phone","Phone number *"],["address","Delivery address *"],["deliveryPinCode","PIN code *"],["notes","Delivery notes (optional)"]] as const).map(([key,label])=><label className="field" key={key}>{label}{key==="address"||key==="notes"?<textarea required={key!=="notes"} rows={key==="address"?3:2} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>:<input required value={form[key]} type={key==="email"?"email":"text"} pattern={key==="deliveryPinCode"?"[0-9]{6}":undefined} minLength={key==="phone"?10:undefined} onChange={e=>setForm({...form,[key]:e.target.value})}/>}</label>)}<div className="cart-total"><div className="total-row"><b>Order total</b><b>{money(subtotal)}</b></div><button className="primary-button full-button" type="submit">Place order request <ArrowRight size={17}/></button><button type="button" className="back-button" onClick={()=>setCheckout(false)}>Back to basket</button><p className="secure-note">Order requests are recorded; payment must be confirmed separately.</p></div></form>}
+      {!checkout?<>{lines.length===0?<div className="empty">Your basket is waiting for something fresh.<a href="#shop" onClick={()=>setCartOpen(false)}>Explore the harvest →</a></div>:<><div className="cart-lines">{lines.map(l=><div className="cart-line" key={l.product.id}><img src={l.product.image} alt=""/><div className="cart-line-main"><b>{l.product.name}</b><small>{money(l.product.pricePaise)} / {l.product.unit}</small><div className="quantity"><button onClick={()=>change(l.product,-1)}><Minus size={13}/></button><span>{l.quantity}</span><button onClick={()=>change(l.product,1)} disabled={l.quantity>=l.product.stock}><Plus size={13}/></button></div></div><strong>{money(l.product.pricePaise*l.quantity)}</strong></div>)}</div><div className="cart-total"><div><span>Subtotal</span><b>{money(subtotal)}</b></div><div><span>Delivery</span><span>Calculated at confirmation</span></div><div className="total-row"><b>Estimated total</b><b>{money(subtotal)}</b></div><button className="primary-button full-button" onClick={()=>setCheckout(true)}>Continue to delivery <ArrowRight size={17}/></button><p className="secure-note"><ShieldCheck size={14}/> You'll pay securely via Razorpay on the next step.</p></div></>}</>:<form className="checkout-form" onSubmit={placeOrder}><p className="form-intro">Tell us where to bring your fresh harvest. Fields marked * are required.</p>{([["customerName","Full name *"],["email","Email address *"],["phone","Phone number *"],["address","Delivery address *"],["deliveryPinCode","PIN code *"],["notes","Delivery notes (optional)"]] as const).map(([key,label])=><label className="field" key={key}>{label}{key==="address"||key==="notes"?<textarea required={key!=="notes"} rows={key==="address"?3:2} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})}/>:<input required value={form[key]} type={key==="email"?"email":"text"} pattern={key==="deliveryPinCode"?"[0-9]{6}":undefined} minLength={key==="phone"?10:undefined} onChange={e=>setForm({...form,[key]:e.target.value})}/>}</label>)}<div className="cart-total"><div className="total-row"><b>Order total</b><b>{money(subtotal)}</b></div><button className="primary-button full-button" type="submit" disabled={paying}>{paying?"Processing…":<>Continue to payment <ArrowRight size={17}/></>}</button><button type="button" className="back-button" onClick={()=>setCheckout(false)} disabled={paying}>Back to basket</button><p className="secure-note"><ShieldCheck size={14}/> Payment is collected securely via Razorpay.</p></div></form>}
       </aside></div>}
     {notice&&<div className="toast" role="status"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={17}/></button></div>}
   </main>;

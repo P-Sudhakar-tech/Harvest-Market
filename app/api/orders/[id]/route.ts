@@ -24,6 +24,28 @@ async function logAudit(userId: string | undefined, userName: string | null | un
   await db.auditLog.create({ data: { userId, userName, action, entity, entityId, details } });
 }
 
+// Single-order lookup, used by the post-checkout screen to poll payment status.
+// A guest order (userId null) has no session to check against, so it's readable
+// by its id alone — the same trust model every "order confirmation" page uses:
+// the cuid is unguessable, and no sensitive data beyond the order itself is returned.
+// An order attached to an account requires the owner's own session.
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const order = await db.order.findUnique({
+    where: { id },
+    select: { id: true, userId: true, status: true, totalPaise: true, paymentProvider: true, createdAt: true },
+  });
+  if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+  if (order.userId) {
+    const user = await getSessionUser();
+    if (!user || user.id !== order.userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { userId, ...publicOrder } = order;
+  return NextResponse.json(publicOrder);
+}
+
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN", "FARMER"]);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });

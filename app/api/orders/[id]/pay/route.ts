@@ -6,15 +6,18 @@ import { getSessionUser } from "@/lib/auth";
 export const runtime = "nodejs";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
   const { id } = await params;
 
   const order = await db.order.findUnique({ where: { id } });
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-  if (order.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // A guest order (userId null) has no session to check against — payable by
+  // anyone who has its unguessable id, same as account-less checkout elsewhere
+  // in this app. An order attached to an account requires the owner's session.
+  if (order.userId) {
+    const user = await getSessionUser();
+    if (!user || user.id !== order.userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     return NextResponse.json({ error: "Payment provider not configured" }, { status: 500 });

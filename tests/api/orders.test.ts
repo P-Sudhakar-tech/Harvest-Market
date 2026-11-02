@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { hashPassword, createSession } from "@/lib/auth";
 import { POST as createOrder, GET as listOrders } from "@/app/api/orders/route";
-import { PATCH as patchOrder } from "@/app/api/orders/[id]/route";
+import { GET as getOrder, PATCH as patchOrder } from "@/app/api/orders/[id]/route";
+import { POST as payOrder } from "@/app/api/orders/[id]/pay/route";
 import { __setMockCookie, __clearMockCookies } from "../mocks/next-headers";
 import { resetDb } from "../helpers/db";
 import { jsonRequest } from "../helpers/request";
@@ -231,5 +232,141 @@ describe("PATCH /api/orders/[id] (status transitions)", () => {
       params: Promise.resolve({ id: orderId }),
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/orders/[id] (single-order lookup used by the post-checkout screen)", () => {
+  it("a guest order is readable by its id with no session at all", async () => {
+    const { product } = await seedCatalog();
+    const orderRes = await createOrder(jsonRequest("http://localhost/api/orders", orderBody(product.id, 1)));
+    const { orderId } = await orderRes.json();
+
+    const res = await getOrder(new Request(`http://localhost/api/orders/${orderId}`), { params: Promise.resolve({ id: orderId }) });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.id).toBe(orderId);
+    expect(body.userId).toBeUndefined();
+  });
+
+  it("an account-linked order requires the owner's session", async () => {
+    const { product } = await seedCatalog();
+    const owner = await db.user.create({
+      data: { name: "Owner", email: "owner@test.com", phone: "9000000010", passwordHash: await hashPassword("x"), role: "CUSTOMER" },
+    });
+    const ownerSession = await createSession(owner.id);
+    __setMockCookie("hm_session", ownerSession.token);
+    const orderRes = await createOrder(jsonRequest("http://localhost/api/orders", orderBody(product.id, 1)));
+    const { orderId } = await orderRes.json();
+
+    __clearMockCookies();
+    const resNoSession = await getOrder(new Request(`http://localhost/api/orders/${orderId}`), { params: Promise.resolve({ id: orderId }) });
+    expect(resNoSession.status).toBe(403);
+
+    const stranger = await db.user.create({
+      data: { name: "Stranger", email: "stranger@test.com", phone: "9000000011", passwordHash: await hashPassword("x"), role: "CUSTOMER" },
+    });
+    const strangerSession = await createSession(stranger.id);
+    __setMockCookie("hm_session", strangerSession.token);
+    const resStranger = await getOrder(new Request(`http://localhost/api/orders/${orderId}`), { params: Promise.resolve({ id: orderId }) });
+    expect(resStranger.status).toBe(403);
+
+    __clearMockCookies();
+    __setMockCookie("hm_session", ownerSession.token);
+    const resOwner = await getOrder(new Request(`http://localhost/api/orders/${orderId}`), { params: Promise.resolve({ id: orderId }) });
+    expect(resOwner.status).toBe(200);
+  });
+
+  it("returns 404 for a nonexistent order", async () => {
+    const res = await getOrder(new Request("http://localhost/api/orders/does-not-exist"), { params: Promise.resolve({ id: "does-not-exist" }) });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("POST /api/orders/[id]/pay (authorization boundary)", () => {
+  // Payment-provider keys are intentionally left unset so the route fails fast
+  // with "not configured" (500) right after the authorization check — proving
+  // a request got past authorization without needing a real Razorpay call.
+  beforeEach(() => {
+    delete process.env.RAZORPAY_KEY_ID;
+    delete process.env.RAZORPAY_KEY_SECRET;
+  });
+
+  it("a guest order can be paid for with no session at all (regression: this used to hard-require auth, making guest orders unpayable forever)", async () => {
+    const { product } = await seedCatalog();
+    const orderRes = await createOrder(jsonRequest("http://localhost/api/orders", orderBody(product.id, 1)));
+    const { orderId } = await orderRes.json();
+
+    const res = await payOrder(new Request(`http://localhost/api/orders/${orderId}/pay`, { method: "POST" }), {
+      params: Promise.resolve({ id: orderId }),
+    });
+    // Got past the ownership check; 500 here only means the payment provider isn't configured in this test env.
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe("Payment provider not configured");
+  });
+
+  it("an account-linked order rejects an unauthenticated caller", async () => {
+    const { product } = await seedCatalog();
+    const owner = await db.user.create({
+      data: { name: "Owner", email: "payowner@test.com", phone: "9000000012", passwordHash: await hashPassword("x"), role: "CUSTOMER" },
+    });
+    const { token } = await createSession(owner.id);
+    __setMockCookie("hm_session", token);
+    const orderRes = await createOrder(jsonRequest("http://localhost/api/orders", orderBody(product.id, 1)));
+    const { orderId } = await orderRes.json();
+
+    __clearMockCookies();
+    const res = await payOrder(new Request(`http://localhost/api/orders/${orderId}/pay`, { method: "POST" }), {
+      params: Promise.resolve({ id: orderId }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("an account-linked order rejects a different logged-in user", async () => {
+    const { product } = await seedCatalog();
+    const owner = await db.user.create({
+      data: { name: "Owner2", email: "payowner2@test.com", phone: "9000000013", passwordHash: await hashPassword("x"), role: "CUSTOMER" },
+    });
+    const ownerSession = await createSession(owner.id);
+    __setMockCookie("hm_session", ownerSession.token);
+    const orderRes = await createOrder(jsonRequest("http://localhost/api/orders", orderBody(product.id, 1)));
+    const { orderId } = await orderRes.json();
+
+    __clearMockCookies();
+    const stranger = await db.user.create({
+      data: { name: "Stranger2", email: "stranger2@test.com", phone: "9000000014", passwordHash: await hashPassword("x"), role: "CUSTOMER" },
+    });
+    const strangerSession = await createSession(stranger.id);
+    __setMockCookie("hm_session", strangerSession.token);
+
+    const res = await payOrder(new Request(`http://localhost/api/orders/${orderId}/pay`, { method: "POST" }), {
+      params: Promise.resolve({ id: orderId }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("the owner of an account-linked order can reach the pay step", async () => {
+    const { product } = await seedCatalog();
+    const owner = await db.user.create({
+      data: { name: "Owner3", email: "payowner3@test.com", phone: "9000000015", passwordHash: await hashPassword("x"), role: "CUSTOMER" },
+    });
+    const { token } = await createSession(owner.id);
+    __setMockCookie("hm_session", token);
+    const orderRes = await createOrder(jsonRequest("http://localhost/api/orders", orderBody(product.id, 1)));
+    const { orderId } = await orderRes.json();
+
+    const res = await payOrder(new Request(`http://localhost/api/orders/${orderId}/pay`, { method: "POST" }), {
+      params: Promise.resolve({ id: orderId }),
+    });
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe("Payment provider not configured");
+  });
+
+  it("returns 404 for a nonexistent order", async () => {
+    const res = await payOrder(new Request("http://localhost/api/orders/does-not-exist/pay", { method: "POST" }), {
+      params: Promise.resolve({ id: "does-not-exist" }),
+    });
+    expect(res.status).toBe(404);
   });
 });
