@@ -5,11 +5,6 @@ import { getSessionUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -28,6 +23,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (order.status !== "PENDING_PAYMENT") {
     return NextResponse.json({ error: `Order is already ${order.status.toLowerCase()}` }, { status: 400 });
   }
+
+  const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
 
   try {
     const razorpayOrder = await razorpay.orders.create({

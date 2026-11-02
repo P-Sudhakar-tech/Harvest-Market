@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Menu,
@@ -22,7 +22,8 @@ const NAV_ITEMS = [
   { name: "Home", href: "/", icon: LayoutDashboard },
 ];
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -33,7 +34,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/admin/products/${params.id}`, { credentials: "include" });
+        const res = await fetch(`/api/products/${params.id}`, { credentials: "include" });
         if (!res.ok) throw new Error("Product not found.");
         const data = await res.json();
         setProduct(data);
@@ -43,7 +44,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         setLoading(false);
       }
     })();
-  }, []);
+  }, [params.id]);
 
   if (loading) {
     return (
