@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { comparePassword, createSession } from "@/lib/auth";
+import { generateCsrfToken } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -26,13 +27,22 @@ export async function POST(request: Request) {
     if (!valid) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
 
     const { token, expiresAt } = await createSession(user.id);
+    const maxAge = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
     const response = NextResponse.json({ id: user.id, email: user.email, role: user.role });
     response.cookies.set("hm_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+      maxAge,
+    });
+    // Double-submit CSRF cookie: readable by client JS so it can be echoed back as a header.
+    response.cookies.set("hm_csrf", generateCsrfToken(), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge,
     });
     return response;
   } catch {

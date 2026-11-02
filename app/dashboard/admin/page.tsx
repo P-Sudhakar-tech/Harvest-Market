@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 const LayoutDashboardIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -121,7 +122,7 @@ export default function AdminDashboardPage() {
     try {
       const res = await fetch(`/api/admin/farmers/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ verified }),
         credentials: "include",
       });
@@ -136,7 +137,7 @@ export default function AdminDashboardPage() {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ status }),
         credentials: "include",
       });
@@ -257,7 +258,7 @@ export default function AdminDashboardPage() {
           <button
             className="signout-btn"
             onClick={() => {
-              fetch("/api/auth/signout", { method: "POST", credentials: "include" }).then(() => router.push("/"));
+              fetch("/api/auth/signout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() }, credentials: "include" }).then(() => router.push("/"));
             }}
             style={{
               display: "flex",

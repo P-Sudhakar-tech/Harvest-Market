@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { verifyCsrfToken } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
 const DASHBOARD_ROUTES = ["/dashboard"];
 const ADMIN_ROUTES = ["/dashboard/admin"];
 const FARMER_ROUTES = ["/dashboard/farmer"];
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const CSRF_EXEMPT_PATHS = ["/api/auth/signin", "/api/auth/signup", "/api/payments/webhook"];
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 60;
@@ -36,6 +40,21 @@ export async function middleware(request: NextRequest) {
     if (!limit.allowed) {
       return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
     }
+
+    // CSRF: for authenticated, state-changing requests, require the double-submit
+    // header to match the csrf cookie set at signin. Signin/signup/webhook are exempt
+    // since they either precede a session or are verified by HMAC signature instead.
+    if (!SAFE_METHODS.has(request.method) && !CSRF_EXEMPT_PATHS.some(p => pathname.startsWith(p))) {
+      const sessionCookie = request.cookies.get("hm_session")?.value;
+      if (sessionCookie) {
+        const csrfCookie = request.cookies.get("hm_csrf")?.value ?? "";
+        const csrfHeader = request.headers.get("x-csrf-token") ?? "";
+        if (!verifyCsrfToken(csrfHeader, csrfCookie)) {
+          return NextResponse.json({ error: "Invalid or missing CSRF token" }, { status: 403 });
+        }
+      }
+    }
+
     const response = NextResponse.next();
     response.headers.set("X-RateLimit-Remaining", String(limit.remaining));
     return response;

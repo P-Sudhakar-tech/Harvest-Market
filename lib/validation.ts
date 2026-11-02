@@ -16,7 +16,7 @@ export const signupSchema = z.object({
   email: z.string().trim().email().max(254),
   phone: z.string().regex(/^[0-9]{10}$/, "Enter a valid 10-digit mobile number"),
   password: z.string().min(8).max(128),
-  role: z.enum(["CUSTOMER", "FARMER", "ADMIN"]).default("CUSTOMER"),
+  role: z.enum(["CUSTOMER", "FARMER"]).default("CUSTOMER"),
 });
 
 export const signinSchema = z.object({

@@ -25,7 +25,9 @@ export async function POST(request: Request) {
   }
 
   const expected = createHmac("sha256", secret).update(body).digest("hex");
-  if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  if (expectedBuf.length !== signatureBuf.length || !timingSafeEqual(expectedBuf, signatureBuf)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
 
   if (eventType === "payment.captured") {
     const payment = payload.payment.entity;
-    const orderId = payment.notes?.order_id;
+    const orderId = payment.notes?.orderId;
 
     if (!orderId) return NextResponse.json({ received: true });
 
@@ -48,6 +50,17 @@ export async function POST(request: Request) {
     const existing = await db.order.findUnique({ where: { id: orderId } });
     if (!existing) return NextResponse.json({ received: true });
     if (existing.status !== "PENDING_PAYMENT") return NextResponse.json({ received: true });
+    if (payment.amount !== existing.totalPaise) {
+      await db.auditLog.create({
+        data: {
+          action: "payment.amount_mismatch",
+          entity: "Order",
+          entityId: orderId,
+          details: `Captured amount ${payment.amount} paise does not match order total ${existing.totalPaise} paise (payment ${payment.id})`,
+        },
+      });
+      return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
+    }
 
     try {
       const updated = await db.order.update({

@@ -13,6 +13,7 @@ import {
   MapPin,
   Package,
 } from "../../../components/Icons";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 const NAV_ITEMS = [
   { name: "Profile", href: "/dashboard/customer/profile", icon: User },
@@ -117,7 +118,7 @@ export default function CustomerProfilePage() {
           <button
             className="signout-btn"
             onClick={() => {
-              fetch("/api/auth/signout", { method: "POST", credentials: "include" }).then(() => router.push("/"));
+              fetch("/api/auth/signout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() }, credentials: "include" }).then(() => router.push("/"));
             }}
             style={{
               display: "flex",

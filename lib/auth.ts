@@ -49,6 +49,7 @@ export async function destroySession() {
   if (token) {
     await db.session.deleteMany({ where: { token } });
     cookieStore.delete(SESSION_COOKIE);
+    cookieStore.delete("hm_csrf");
   }
 }
 

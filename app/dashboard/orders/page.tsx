@@ -12,6 +12,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 type Order = { id: string; customerName: string; email: string; status: string; totalPaise: number; items: any[]; user: { name: string | null } | null };
 
@@ -76,7 +77,7 @@ export default function OrdersPage() {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ status }),
         credentials: "include",
       });
@@ -192,7 +193,7 @@ export default function OrdersPage() {
           <button
             className="signout-btn"
             onClick={() => {
-              fetch("/api/auth/signout", { method: "POST", credentials: "include" }).then(() => router.push("/"));
+              fetch("/api/auth/signout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() }, credentials: "include" }).then(() => router.push("/"));
             }}
             style={{
               display: "flex",

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { ShoppingBasket, Search, Leaf, ArrowRight, Plus, Minus, X, MapPin, Sprout, Truck, ShieldCheck, User, LogIn, LogOut, UserPlus } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 type Product = {id:string;name:string;description:string;category:string;pricePaise:number;unit:string;image:string;stock:number;featured:boolean;farmerId:string;farmerName:string;farmerLocation:string};
 type Farmer = {id:string;name:string;farmName:string;location:string;description:string};
@@ -42,13 +43,13 @@ export default function Market({products,farmers}:{products:Product[];farmers:Fa
     setCart(old=>{const next={...old};const qty=(next[p.id]?.quantity||0)+delta;if(qty<=0)delete next[p.id];else if(qty<=p.stock)next[p.id]={product:p,quantity:qty};return next;});
   }
   async function signOut(){
-    await fetch("/api/auth/signout",{method:"POST",credentials:"include"});
+    await fetch("/api/auth/signout",{method:"POST",headers:{"x-csrf-token":getCsrfToken()},credentials:"include"});
     setUser(null);
   }
   async function placeOrder(e:React.FormEvent) {
     e.preventDefault();setNotice("");
     try {
-      const res=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,items:lines.map(l=>({productId:l.product.id,quantity:l.quantity}))}),credentials:"include"});
+      const res=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json","x-csrf-token":getCsrfToken()},body:JSON.stringify({...form,items:lines.map(l=>({productId:l.product.id,quantity:l.quantity}))}),credentials:"include"});
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"Could not place order");
       setNotice(`Order ${data.orderId} created. Payment is not collected yet; the market team will contact you to confirm payment.`);

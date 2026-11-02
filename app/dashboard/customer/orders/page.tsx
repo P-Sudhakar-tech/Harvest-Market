@@ -14,6 +14,7 @@ import {
   Truck,
   HelpCircle,
 } from "../../../components/Icons";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 type Order = { id: string; customerName: string; email: string; status: string; totalPaise: number; items: any[]; createdAt: string };
 
@@ -150,7 +151,7 @@ export default function CustomerOrdersPage() {
           <button
             className="signout-btn"
             onClick={() => {
-              fetch("/api/auth/signout", { method: "POST", credentials: "include" }).then(() => router.push("/"));
+              fetch("/api/auth/signout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() }, credentials: "include" }).then(() => router.push("/"));
             }}
             style={{
               display: "flex",

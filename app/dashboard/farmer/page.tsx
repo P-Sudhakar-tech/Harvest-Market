@@ -15,6 +15,7 @@ import {
   Package,
   ShoppingBasket,
 } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -86,7 +87,7 @@ export default function FarmerDashboardPage() {
     try {
       const res = await fetch("/api/admin/products", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({
           ...form,
           pricePaise: parseInt(form.pricePaise) || 0,
@@ -109,7 +110,7 @@ export default function FarmerDashboardPage() {
     try {
       const res = await fetch(`/api/admin/products/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify(form),
         credentials: "include",
       });
@@ -124,7 +125,7 @@ export default function FarmerDashboardPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this product?")) return;
     try {
-      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE", headers: { "x-csrf-token": getCsrfToken() }, credentials: "include" });
       if (!res.ok) throw new Error("Failed to delete");
       await fetchData();
     } catch {
@@ -136,7 +137,7 @@ export default function FarmerDashboardPage() {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": getCsrfToken() },
         body: JSON.stringify({ status }),
         credentials: "include",
       });
@@ -234,7 +235,7 @@ export default function FarmerDashboardPage() {
           <button
             className="signout-btn"
             onClick={() => {
-              fetch("/api/auth/signout", { method: "POST", credentials: "include" }).then(() => router.push("/"));
+              fetch("/api/auth/signout", { method: "POST", headers: { "x-csrf-token": getCsrfToken() }, credentials: "include" }).then(() => router.push("/"));
             }}
             style={{
               display: "flex",
